@@ -22,11 +22,8 @@ func computeCentroid(points []rl.Vector2) rl.Vector2 {
 }
 
 func drawShape(pos rl.Vector2, scale float32, rotation float32, points []rl.Vector2) {
-	centroid := computeCentroid(points)
-
 	transformer := func(point rl.Vector2) rl.Vector2 {
-		centered := rl.Vector2Subtract(point, centroid)
-		scaled := rl.Vector2Scale(centered, scale)
+		scaled := rl.Vector2Scale(point, scale)
 		rotated := rl.Vector2Rotate(scaled, rotation)
 		return rl.Vector2Add(rotated, pos)
 	}
@@ -47,11 +44,11 @@ func main() {
 
 	player := Player{
 		shape: []rl.Vector2{
-			{X: 0.2, Y: 0.8},
-			{X: 0.5, Y: 0.2},
-			{X: 0.8, Y: 0.8},
-			{X: 0.6, Y: 0.7},
-			{X: 0.4, Y: 0.7},
+			{X: -0.3, Y: 0.3},
+			{X: 0.0, Y: -0.3},
+			{X: 0.3, Y: 0.3},
+			{X: 0.1, Y: 0.2},
+			{X: -0.1, Y: 0.2},
 		},
 	}
 
