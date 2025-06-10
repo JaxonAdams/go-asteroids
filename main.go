@@ -13,7 +13,12 @@ func main() {
 
 		rl.ClearBackground(rl.Black)
 
-		rl.DrawText("Congrats! You created your first window!", 190, 200, 20, rl.LightGray)
+		// Player Ship
+		rl.DrawLine(100, 300, 150, 200, rl.White)
+		rl.DrawLine(150, 200, 200, 300, rl.White)
+		rl.DrawLine(100, 300, 120, 280, rl.White)
+		rl.DrawLine(200, 300, 180, 280, rl.White)
+		rl.DrawLine(120, 280, 180, 280, rl.White)
 
 		rl.EndDrawing()
 	}
