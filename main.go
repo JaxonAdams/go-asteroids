@@ -25,6 +25,13 @@ func drawShape(pos rl.Vector2, scale float32, points []rl.Vector2) {
 	}
 }
 
+func centerShape(startPos rl.Vector2) rl.Vector2 {
+	return rl.Vector2Subtract(
+		startPos,
+		rl.Vector2{X: SCALE, Y: SCALE},
+	)
+}
+
 func main() {
 	rl.InitWindow(WINDOW_SIZE_X, WINDOW_SIZE_Y, "ASTEROIDS")
 	defer rl.CloseWindow()
@@ -32,7 +39,12 @@ func main() {
 	rl.SetTargetFPS(60)
 
 	player := Player{
-		pos: rl.Vector2Subtract(rl.Vector2Scale(rl.Vector2{X: WINDOW_SIZE_X, Y: WINDOW_SIZE_Y}, 0.5), rl.Vector2{X: SCALE, Y: SCALE}),
+		pos: centerShape(
+			rl.Vector2Scale(rl.Vector2{
+				X: WINDOW_SIZE_X,
+				Y: WINDOW_SIZE_Y,
+			}, 0.5),
+		),
 	}
 
 	for !rl.WindowShouldClose() {
