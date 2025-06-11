@@ -8,12 +8,15 @@ import (
 const WINDOW_SIZE_X = 800
 const WINDOW_SIZE_Y = 450
 const SCALE = 40
-const ROTATION_SPEED = 720.0
+const PLAYER_SPEED = 25.0
+const ROTATION_SPEED = 2 * (2 * math.Pi)
+const DRAG = 0.01
 
 type Player struct {
-	pos      rl.Vector2
-	shape    []rl.Vector2
-	rotation float32
+	Position rl.Vector2
+	Velocity rl.Vector2
+	Shape    []rl.Vector2
+	Rotation float32
 }
 
 var player Player
@@ -24,7 +27,7 @@ func main() {
 
 	rl.SetTargetFPS(60)
 
-	player.shape = []rl.Vector2{
+	player.Shape = []rl.Vector2{
 		{X: -0.2, Y: 0.3},
 		{X: 0.0, Y: -0.3},
 		{X: 0.2, Y: 0.3},
@@ -32,12 +35,12 @@ func main() {
 		{X: -0.1, Y: 0.2},
 	}
 
-	player.pos = rl.Vector2Add(
+	player.Position = rl.Vector2Add(
 		rl.Vector2Scale(rl.Vector2{
 			X: WINDOW_SIZE_X,
 			Y: WINDOW_SIZE_Y,
 		}, 0.5),
-		computeCentroid(player.shape),
+		computeCentroid(player.Shape),
 	)
 
 	for !rl.WindowShouldClose() {
@@ -58,10 +61,10 @@ func update() {
 func draw() {
 	// Player Ship
 	drawShape(
-		player.pos,
+		player.Position,
 		SCALE,
-		player.rotation,
-		player.shape,
+		player.Rotation,
+		player.Shape,
 	)
 }
 
@@ -70,12 +73,28 @@ func handleInput() {
 
 	// Player Movement
 	if rl.IsKeyDown(rl.KeyA) {
-		player.rotation -= degreesToRadians(ROTATION_SPEED * dt)
+		player.Rotation -= ROTATION_SPEED * dt
 	}
 
 	if rl.IsKeyDown(rl.KeyD) {
-		player.rotation += degreesToRadians(ROTATION_SPEED * dt)
+		player.Rotation += ROTATION_SPEED * dt
 	}
+
+	if rl.IsKeyDown(rl.KeyW) {
+		forward := rl.Vector2{
+			X: float32(math.Cos(float64(player.Rotation - math.Pi/2))),
+			Y: float32(math.Sin(float64(player.Rotation - math.Pi/2))),
+		}
+
+		acceleration := rl.Vector2Scale(forward, PLAYER_SPEED*dt)
+
+		player.Velocity = rl.Vector2Add(player.Velocity, acceleration)
+	}
+
+	// Environmental Effects
+	player.Velocity = rl.Vector2Scale(player.Velocity, 1.0-DRAG)
+	player.Position = rl.Vector2Add(player.Position, player.Velocity)
+
 }
 
 func drawShape(pos rl.Vector2, scale float32, rotation float32, points []rl.Vector2) {
