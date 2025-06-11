@@ -23,7 +23,7 @@ func main() {
 
 	p.Init()
 
-	a = asteroid.New()
+	a = asteroid.New(asteroid.SMALL)
 
 	for !rl.WindowShouldClose() {
 
