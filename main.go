@@ -94,7 +94,10 @@ func handleInput() {
 	// Environmental Effects
 	player.Velocity = rl.Vector2Scale(player.Velocity, 1.0-DRAG)
 	player.Position = rl.Vector2Add(player.Position, player.Velocity)
-
+	player.Position = rl.Vector2{
+		X: float32(int32(player.Position.X) % WINDOW_SIZE_X),
+		Y: float32(int32(player.Position.Y) % WINDOW_SIZE_Y),
+	}
 }
 
 func drawShape(pos rl.Vector2, scale float32, rotation float32, points []rl.Vector2) {
