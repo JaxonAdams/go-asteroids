@@ -38,6 +38,7 @@ func main() {
 
 func update() {
 	p.HandleInput()
+	a.Move()
 }
 
 func draw() {
