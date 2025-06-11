@@ -94,10 +94,7 @@ func handleInput() {
 	// Environmental Effects
 	player.Velocity = rl.Vector2Scale(player.Velocity, 1.0-DRAG)
 	player.Position = rl.Vector2Add(player.Position, player.Velocity)
-	player.Position = rl.Vector2{
-		X: float32(int32(player.Position.X) % WINDOW_SIZE_X),
-		Y: float32(int32(player.Position.Y) % WINDOW_SIZE_Y),
-	}
+	player.Position = screenWraparound(player.Position)
 }
 
 func drawShape(pos rl.Vector2, scale float32, rotation float32, points []rl.Vector2) {
@@ -123,6 +120,21 @@ func computeCentroid(points []rl.Vector2) rl.Vector2 {
 	return rl.Vector2Scale(sum, 1/float32(len(points)))
 }
 
-func degreesToRadians(degrees float32) float32 {
-	return degrees * (math.Pi / 180.0)
+func screenWraparound(pos rl.Vector2) rl.Vector2 {
+	newPos := pos
+
+	if pos.X < 0 {
+		newPos.X += WINDOW_SIZE_X
+	}
+	if pos.X > WINDOW_SIZE_X {
+		newPos.X -= WINDOW_SIZE_X
+	}
+	if pos.Y < 0 {
+		newPos.Y += WINDOW_SIZE_Y
+	}
+	if pos.Y > WINDOW_SIZE_Y {
+		newPos.Y -= WINDOW_SIZE_Y
+	}
+
+	return newPos
 }
