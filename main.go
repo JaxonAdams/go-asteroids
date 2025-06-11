@@ -8,15 +8,17 @@ import (
 const WINDOW_SIZE_X = 800
 const WINDOW_SIZE_Y = 450
 const SCALE = 40
-const PLAYER_SPEED = 25.0
-const ROTATION_SPEED = 2 * (2 * math.Pi)
+const PLAYER_SPEED = 20.0
+const ROTATION_SPEED = 1.5 * (2 * math.Pi)
 const DRAG = 0.01
 
 type Player struct {
-	Position rl.Vector2
-	Velocity rl.Vector2
-	Shape    []rl.Vector2
-	Rotation float32
+	Position    rl.Vector2
+	Velocity    rl.Vector2
+	Shape       []rl.Vector2
+	TailShape   []rl.Vector2
+	Rotation    float32
+	IsThrusting bool
 }
 
 var player Player
@@ -32,6 +34,12 @@ func main() {
 		{X: 0.0, Y: -0.3},
 		{X: 0.2, Y: 0.3},
 		{X: 0.1, Y: 0.2},
+		{X: -0.1, Y: 0.2},
+	}
+
+	player.TailShape = []rl.Vector2{
+		{X: 0.1, Y: 0.2},
+		{X: 0.0, Y: 0.5},
 		{X: -0.1, Y: 0.2},
 	}
 
@@ -66,6 +74,17 @@ func draw() {
 		player.Rotation,
 		player.Shape,
 	)
+
+	shouldDrawTail := int32(rl.GetTime()*20)%2 == 0
+	if player.IsThrusting && shouldDrawTail {
+		// Player Thrust Tail
+		drawShape(
+			player.Position,
+			SCALE,
+			player.Rotation,
+			player.TailShape,
+		)
+	}
 }
 
 func handleInput() {
@@ -81,6 +100,8 @@ func handleInput() {
 	}
 
 	if rl.IsKeyDown(rl.KeyW) {
+		player.IsThrusting = true
+
 		forward := rl.Vector2{
 			X: float32(math.Cos(float64(player.Rotation - math.Pi/2))),
 			Y: float32(math.Sin(float64(player.Rotation - math.Pi/2))),
@@ -89,6 +110,8 @@ func handleInput() {
 		acceleration := rl.Vector2Scale(forward, PLAYER_SPEED*dt)
 
 		player.Velocity = rl.Vector2Add(player.Velocity, acceleration)
+	} else {
+		player.IsThrusting = false
 	}
 
 	// Environmental Effects
