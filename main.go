@@ -3,6 +3,7 @@ package main
 import (
 	player "github.com/JaxonAdams/go-asteroids/Player"
 	"github.com/JaxonAdams/go-asteroids/constants"
+	"github.com/JaxonAdams/go-asteroids/utils"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -37,7 +38,7 @@ func update() {
 
 func draw() {
 	// Player Ship
-	drawShape(
+	utils.DrawShape(
 		p.Position,
 		constants.SCALE,
 		p.Rotation,
@@ -47,26 +48,11 @@ func draw() {
 	shouldDrawTail := int32(rl.GetTime()*20)%2 == 0
 	if p.IsThrusting && shouldDrawTail {
 		// Player Thrust Tail
-		drawShape(
+		utils.DrawShape(
 			p.Position,
 			constants.SCALE,
 			p.Rotation,
 			p.TailShape,
 		)
-	}
-}
-
-func drawShape(pos rl.Vector2, scale float32, rotation float32, points []rl.Vector2) {
-	transformer := func(point rl.Vector2) rl.Vector2 {
-		scaled := rl.Vector2Scale(point, scale)
-		rotated := rl.Vector2Rotate(scaled, rotation)
-		return rl.Vector2Add(rotated, pos)
-	}
-
-	for i := range len(points) {
-		current := transformer(points[i])
-		next := transformer(points[(i+1)%len(points)])
-
-		rl.DrawLineV(current, next, rl.White)
 	}
 }
