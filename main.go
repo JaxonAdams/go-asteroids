@@ -2,12 +2,14 @@ package main
 
 import (
 	player "github.com/JaxonAdams/go-asteroids/Player"
+	"github.com/JaxonAdams/go-asteroids/asteroid"
 	"github.com/JaxonAdams/go-asteroids/constants"
 	"github.com/JaxonAdams/go-asteroids/utils"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 var p player.PlayerShip
+var a *asteroid.Asteroid // TODO: remove me
 
 func main() {
 	rl.InitWindow(
@@ -20,6 +22,8 @@ func main() {
 	rl.SetTargetFPS(60)
 
 	p.Init()
+
+	a = asteroid.New()
 
 	for !rl.WindowShouldClose() {
 
@@ -54,5 +58,14 @@ func draw() {
 			p.Rotation,
 			p.TailShape,
 		)
+
 	}
+
+	// Asteroids
+	utils.DrawShape(
+		a.Position,
+		constants.SCALE,
+		a.Rotation,
+		a.Shape,
+	)
 }
