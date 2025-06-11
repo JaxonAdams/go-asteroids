@@ -2,11 +2,13 @@ package main
 
 import (
 	rl "github.com/gen2brain/raylib-go/raylib"
+	"math"
 )
 
 const WINDOW_SIZE_X = 800
 const WINDOW_SIZE_Y = 450
 const SCALE = 40
+const ROTATION_SPEED = 720.0
 
 type Player struct {
 	pos      rl.Vector2
@@ -50,7 +52,7 @@ func main() {
 }
 
 func update() {
-	player.rotation = float32(rl.GetTime()) * rl.Pi
+	handleInput()
 }
 
 func draw() {
@@ -61,6 +63,19 @@ func draw() {
 		player.rotation,
 		player.shape,
 	)
+}
+
+func handleInput() {
+	dt := rl.GetFrameTime()
+
+	// Player Movement
+	if rl.IsKeyDown(rl.KeyA) {
+		player.rotation -= degreesToRadians(ROTATION_SPEED * dt)
+	}
+
+	if rl.IsKeyDown(rl.KeyD) {
+		player.rotation += degreesToRadians(ROTATION_SPEED * dt)
+	}
 }
 
 func drawShape(pos rl.Vector2, scale float32, rotation float32, points []rl.Vector2) {
@@ -84,4 +99,8 @@ func computeCentroid(points []rl.Vector2) rl.Vector2 {
 		sum = rl.Vector2Add(sum, p)
 	}
 	return rl.Vector2Scale(sum, 1/float32(len(points)))
+}
+
+func degreesToRadians(degrees float32) float32 {
+	return degrees * (math.Pi / 180.0)
 }
