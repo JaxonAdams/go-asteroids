@@ -1,18 +1,24 @@
 package main
 
 import (
-	"fmt"
+	"math"
 	"math/rand/v2"
 	"time"
 
 	player "github.com/JaxonAdams/go-asteroids/Player"
 	"github.com/JaxonAdams/go-asteroids/asteroid"
 	"github.com/JaxonAdams/go-asteroids/constants"
+	"github.com/JaxonAdams/go-asteroids/particle"
 	"github.com/JaxonAdams/go-asteroids/utils"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-var p player.PlayerShip
+type GameState struct {
+	PlayerShip    player.PlayerShip
+	AsteroidField []*asteroid.Asteroid
+	GameParticles []particle.IParticle
+}
+
 var s = rand.NewPCG(42, uint64(time.Now().Unix()))
 var rng = rand.New(s)
 
@@ -26,74 +32,135 @@ func main() {
 
 	rl.SetTargetFPS(60)
 
-	p.Init()
-
-	asteroids := loadLevel()
+	state := prepareLevel([]*asteroid.Asteroid{})
 
 	for !rl.WindowShouldClose() {
 
-		update(asteroids)
+		update(&state)
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
-		draw(asteroids)
+		draw(state)
 		rl.EndDrawing()
 	}
 }
 
-func update(asteroids []*asteroid.Asteroid) {
-	for _, a := range asteroids {
+func prepareLevel(existingAsteroids []*asteroid.Asteroid) GameState {
+	var state GameState
+
+	if len(existingAsteroids) > 0 {
+		state.AsteroidField = existingAsteroids
+	} else {
+		state.AsteroidField = loadLevel()
+	}
+
+	state.PlayerShip = player.PlayerShip{}
+	state.GameParticles = []particle.IParticle{}
+
+	state.PlayerShip.Init()
+
+	return state
+}
+
+func update(state *GameState) {
+	// Update asteroids
+	for _, a := range state.AsteroidField {
 		a.Move()
 	}
 
-	if !p.IsDead() {
-		p.HandleInput()
+	// Update particles
+	newParticles := (state.GameParticles)[:0]
+	for _, pt := range state.GameParticles {
+		pt.Update()
+		if !pt.IsDead() {
+			newParticles = append(newParticles, pt)
+		}
+	}
+	state.GameParticles = newParticles
 
-		for _, a := range asteroids {
+	if !state.PlayerShip.IsDead() {
+		state.PlayerShip.HandleInput()
+
+		for _, a := range state.AsteroidField {
 			// Check for collision
-			dist := rl.Vector2Distance(a.Position, p.Position)
+			dist := rl.Vector2Distance(a.Position, state.PlayerShip.Position)
 			asteroidRadius := float32(a.GetSize() * a.GetCollisionScale() * constants.SCALE)
-			playerRadius := p.GetCollisionRadius()
+			playerRadius := state.PlayerShip.GetCollisionRadius()
 
 			if dist < (asteroidRadius + playerRadius) {
-				fmt.Println("PLAYER DIED!!!")
-				p.DeathTime = constants.PLAYER_DEATH_COOLDOWN
+				state.PlayerShip.DeathTime = constants.PLAYER_DEATH_COOLDOWN
+
+				// Create death particles
+				for range 5 {
+					angle := 2 * math.Pi * rng.Float64()
+					newParticle := &particle.LineParticle{
+						Rotation: 2 * math.Pi * rng.Float32(),
+						Length:   constants.SCALE * (0.6 + (0.4 * rng.Float32())),
+						Particle: particle.Particle{
+							Position: rl.Vector2Add(
+								state.PlayerShip.Position,
+								rl.Vector2{X: rng.Float32() * 3, Y: rng.Float32() * 3},
+							),
+							Velocity: rl.Vector2Scale(
+								rl.Vector2{X: float32(math.Cos(angle)), Y: float32(math.Sin(angle))},
+								2.0*rng.Float32(),
+							),
+							Ttl: 3.0 + rng.Float32(),
+						},
+					}
+					state.GameParticles = append(state.GameParticles, newParticle)
+				}
 			}
 		}
 	} else {
-		p.DeathTime -= float64(rl.GetFrameTime())
+		state.PlayerShip.DeathTime -= float64(rl.GetFrameTime())
+		state.PlayerShip.IsThrusting = false
+
+		if state.PlayerShip.DeathTime <= 0.0 {
+			newState := prepareLevel(state.AsteroidField)
+			state.PlayerShip = newState.PlayerShip
+			state.AsteroidField = newState.AsteroidField
+			state.GameParticles = newParticles
+		}
 	}
 }
 
-func draw(asteroids []*asteroid.Asteroid) {
+func draw(state GameState) {
 	// Player Ship
-	utils.DrawShape(
-		p.Position,
-		constants.SCALE,
-		p.Rotation,
-		p.Shape,
-	)
+	if !state.PlayerShip.IsDead() {
+		utils.DrawShape(
+			state.PlayerShip.Position,
+			constants.SCALE,
+			state.PlayerShip.Rotation,
+			state.PlayerShip.Shape,
+		)
+	}
 
 	shouldDrawTail := int32(rl.GetTime()*20)%2 == 0
-	if p.IsThrusting && shouldDrawTail {
+	if state.PlayerShip.IsThrusting && shouldDrawTail {
 		// Player Thrust Tail
 		utils.DrawShape(
-			p.Position,
+			state.PlayerShip.Position,
 			constants.SCALE,
-			p.Rotation,
-			p.TailShape,
+			state.PlayerShip.Rotation,
+			state.PlayerShip.TailShape,
 		)
 
 	}
 
 	// Asteroids
-	for _, a := range asteroids {
+	for _, a := range state.AsteroidField {
 		utils.DrawShape(
 			a.Position,
 			constants.SCALE,
 			a.Rotation,
 			a.Shape,
 		)
+	}
+
+	// Particles
+	for _, pt := range state.GameParticles {
+		pt.Draw()
 	}
 }
 
