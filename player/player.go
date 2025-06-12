@@ -1,10 +1,11 @@
 package player
 
 import (
+	"math"
+
 	"github.com/JaxonAdams/go-asteroids/constants"
 	"github.com/JaxonAdams/go-asteroids/utils"
 	rl "github.com/gen2brain/raylib-go/raylib"
-	"math"
 )
 
 type PlayerShip struct {
@@ -14,6 +15,7 @@ type PlayerShip struct {
 	TailShape   []rl.Vector2
 	Rotation    float32
 	IsThrusting bool
+	DeathTime   float64
 }
 
 func (p *PlayerShip) Init() {
@@ -71,4 +73,12 @@ func (p *PlayerShip) HandleInput() {
 	p.Velocity = rl.Vector2Scale(p.Velocity, 1.0-constants.DRAG)
 	p.Position = rl.Vector2Add(p.Position, p.Velocity)
 	p.Position = utils.ScreenWraparound(p.Position)
+}
+
+func (p PlayerShip) IsDead() bool {
+	return p.DeathTime > 0
+}
+
+func (p PlayerShip) GetCollisionRadius() float32 {
+	return constants.SCALE * 0.5
 }

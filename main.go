@@ -1,13 +1,15 @@
 package main
 
 import (
+	"fmt"
+	"math/rand/v2"
+	"time"
+
 	player "github.com/JaxonAdams/go-asteroids/Player"
 	"github.com/JaxonAdams/go-asteroids/asteroid"
 	"github.com/JaxonAdams/go-asteroids/constants"
 	"github.com/JaxonAdams/go-asteroids/utils"
 	rl "github.com/gen2brain/raylib-go/raylib"
-	"math/rand/v2"
-	"time"
 )
 
 var p player.PlayerShip
@@ -39,14 +41,31 @@ func main() {
 	}
 }
 
-func update(asteroids []asteroid.Asteroid) {
-	p.HandleInput()
-	for i := range asteroids {
-		asteroids[i].Move()
+func update(asteroids []*asteroid.Asteroid) {
+	for _, a := range asteroids {
+		a.Move()
+	}
+
+	if !p.IsDead() {
+		p.HandleInput()
+
+		for _, a := range asteroids {
+			// Check for collision
+			dist := rl.Vector2Distance(a.Position, p.Position)
+			asteroidRadius := float32(a.GetSize() * a.GetCollisionScale() * constants.SCALE)
+			playerRadius := p.GetCollisionRadius()
+
+			if dist < (asteroidRadius + playerRadius) {
+				fmt.Println("PLAYER DIED!!!")
+				p.DeathTime = constants.PLAYER_DEATH_COOLDOWN
+			}
+		}
+	} else {
+		p.DeathTime -= float64(rl.GetFrameTime())
 	}
 }
 
-func draw(asteroids []asteroid.Asteroid) {
+func draw(asteroids []*asteroid.Asteroid) {
 	// Player Ship
 	utils.DrawShape(
 		p.Position,
@@ -78,13 +97,13 @@ func draw(asteroids []asteroid.Asteroid) {
 	}
 }
 
-func loadLevel() []asteroid.Asteroid {
+func loadLevel() []*asteroid.Asteroid {
 	numAsteroids := 10
-	asteroids := make([]asteroid.Asteroid, 0, numAsteroids)
+	asteroids := make([]*asteroid.Asteroid, 0, numAsteroids)
 
 	for range numAsteroids {
 		size := rng.Int32N(int32(asteroid.NumAsteroidSizes))
-		asteroids = append(asteroids, *asteroid.New(asteroid.AsteroidSize(size)))
+		asteroids = append(asteroids, asteroid.New(asteroid.AsteroidSize(size)))
 	}
 
 	return asteroids

@@ -8,3 +8,4 @@ const SCALE = 40
 const PLAYER_SPEED = 20.0
 const ROTATION_SPEED = 1.5 * (2 * math.Pi)
 const DRAG = 0.01
+const PLAYER_DEATH_COOLDOWN = 3.0

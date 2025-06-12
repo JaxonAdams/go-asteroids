@@ -13,12 +13,13 @@ import (
 type AsteroidSize int
 
 type Asteroid struct {
-	Position rl.Vector2
-	Velocity rl.Vector2
-	Speed    float32
-	Rotation float32
-	Shape    []rl.Vector2
-	Size     AsteroidSize
+	Position  rl.Vector2
+	Velocity  rl.Vector2
+	Speed     float32
+	Rotation  float32
+	Shape     []rl.Vector2
+	Size      AsteroidSize
+	AvgRadius float64
 }
 
 const (
@@ -44,16 +45,34 @@ func New(size AsteroidSize) *Asteroid {
 	rot := getRandRotation()
 	vel := getRandVelocity(rot)
 
-	shape := getRandShape(size)
+	shape, avgRadius := getRandShape(size)
 
 	return &Asteroid{
-		Position: pos,
-		Velocity: vel,
-		Speed:    100.0,
-		Rotation: rot,
-		Shape:    shape,
-		Size:     size,
+		Position:  pos,
+		Velocity:  vel,
+		Speed:     100.0,
+		Rotation:  rot,
+		Shape:     shape,
+		Size:      size,
+		AvgRadius: avgRadius,
 	}
+}
+
+func (a Asteroid) GetSize() float64 {
+	return a.AvgRadius
+}
+
+func (a Asteroid) GetCollisionScale() float64 {
+	switch a.Size {
+	case BIG:
+		return 0.8
+	case MEDIUM:
+		return 0.6
+	case SMALL:
+		return 0.6
+	}
+
+	return 1.0
 }
 
 func getRandPosition() rl.Vector2 {
@@ -74,7 +93,7 @@ func getRandVelocity(rotation float32) rl.Vector2 {
 	}
 }
 
-func getRandShape(size AsteroidSize) []rl.Vector2 {
+func getRandShape(size AsteroidSize) ([]rl.Vector2, float64) {
 	var points []rl.Vector2
 
 	var sizeMultiplier float32
@@ -84,19 +103,20 @@ func getRandShape(size AsteroidSize) []rl.Vector2 {
 	case MEDIUM:
 		sizeMultiplier = 1.0
 	case SMALL:
-		sizeMultiplier = 0.01
+		sizeMultiplier = 0.5
 	}
 
 	numPoints := rng.Int32N(4) + 7 // 7–10 points
 	baseAngle := 2 * math.Pi / float64(numPoints)
 
+	var allPointsRadius []float64
 	for i := int32(0); i < numPoints; i++ {
 		// Add small angle jitter for non-uniform spacing
 		angleJitter := rng.Float64()*baseAngle*0.4 - baseAngle*0.2
 		angle := float64(i)*baseAngle + angleJitter
 
-		// Allow deeper valleys by lowering the minimum radius
 		radius := 0.4 + rng.Float64()*0.6*float64(sizeMultiplier)
+		allPointsRadius = append(allPointsRadius, radius)
 
 		// Polar to Cartesian
 		x := float32(math.Cos(angle) * radius)
@@ -105,5 +125,5 @@ func getRandShape(size AsteroidSize) []rl.Vector2 {
 		points = append(points, rl.Vector2{X: x, Y: y})
 	}
 
-	return points
+	return points, utils.CalculateAverage(allPointsRadius)
 }
