@@ -25,6 +25,7 @@ const (
 	BIG AsteroidSize = iota
 	MEDIUM
 	SMALL
+	NumAsteroidSizes
 )
 
 var s = rand.NewPCG(42, uint64(time.Now().Unix()))
@@ -79,11 +80,11 @@ func getRandShape(size AsteroidSize) []rl.Vector2 {
 	var sizeMultiplier float32
 	switch size {
 	case BIG:
-		sizeMultiplier = 1.2
+		sizeMultiplier = 2.0
 	case MEDIUM:
-		sizeMultiplier = 0.7
+		sizeMultiplier = 1.0
 	case SMALL:
-		sizeMultiplier = 0.2
+		sizeMultiplier = 0.01
 	}
 
 	numPoints := rng.Int32N(4) + 7 // 7–10 points

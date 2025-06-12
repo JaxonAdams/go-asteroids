@@ -6,10 +6,13 @@ import (
 	"github.com/JaxonAdams/go-asteroids/constants"
 	"github.com/JaxonAdams/go-asteroids/utils"
 	rl "github.com/gen2brain/raylib-go/raylib"
+	"math/rand/v2"
+	"time"
 )
 
 var p player.PlayerShip
-var a *asteroid.Asteroid // TODO: remove me
+var s = rand.NewPCG(42, uint64(time.Now().Unix()))
+var rng = rand.New(s)
 
 func main() {
 	rl.InitWindow(
@@ -23,25 +26,27 @@ func main() {
 
 	p.Init()
 
-	a = asteroid.New(asteroid.SMALL)
+	asteroids := loadLevel()
 
 	for !rl.WindowShouldClose() {
 
-		update()
+		update(asteroids)
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
-		draw()
+		draw(asteroids)
 		rl.EndDrawing()
 	}
 }
 
-func update() {
+func update(asteroids []asteroid.Asteroid) {
 	p.HandleInput()
-	a.Move()
+	for i := range asteroids {
+		asteroids[i].Move()
+	}
 }
 
-func draw() {
+func draw(asteroids []asteroid.Asteroid) {
 	// Player Ship
 	utils.DrawShape(
 		p.Position,
@@ -63,10 +68,24 @@ func draw() {
 	}
 
 	// Asteroids
-	utils.DrawShape(
-		a.Position,
-		constants.SCALE,
-		a.Rotation,
-		a.Shape,
-	)
+	for _, a := range asteroids {
+		utils.DrawShape(
+			a.Position,
+			constants.SCALE,
+			a.Rotation,
+			a.Shape,
+		)
+	}
+}
+
+func loadLevel() []asteroid.Asteroid {
+	numAsteroids := 10
+	asteroids := make([]asteroid.Asteroid, 0, numAsteroids)
+
+	for range numAsteroids {
+		size := rng.Int32N(int32(asteroid.NumAsteroidSizes))
+		asteroids = append(asteroids, *asteroid.New(asteroid.AsteroidSize(size)))
+	}
+
+	return asteroids
 }
