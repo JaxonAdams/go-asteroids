@@ -152,7 +152,7 @@ func draw(state GameState) {
 	for _, a := range state.AsteroidField {
 		utils.DrawShape(
 			a.Position,
-			constants.SCALE,
+			constants.SCALE*a.GetSizeModifier(),
 			a.Rotation,
 			a.Shape,
 		)

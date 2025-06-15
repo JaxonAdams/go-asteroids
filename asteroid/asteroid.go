@@ -34,7 +34,7 @@ var rng = rand.New(s)
 
 func (a *Asteroid) Move() {
 	dt := rl.GetFrameTime()
-	velocity := rl.Vector2Scale(a.Velocity, a.Speed*dt)
+	velocity := rl.Vector2Scale(a.Velocity, a.Speed*dt*a.GetSpeedModifier())
 	a.Position = rl.Vector2Add(a.Position, velocity)
 	a.Position = utils.ScreenWraparound(a.Position)
 }
@@ -45,7 +45,7 @@ func New(size AsteroidSize) *Asteroid {
 	rot := getRandRotation()
 	vel := getRandVelocity(rot)
 
-	shape, avgRadius := getRandShape(size)
+	shape, avgRadius := getRandShape()
 
 	return &Asteroid{
 		Position:  pos,
@@ -69,7 +69,33 @@ func (a Asteroid) GetCollisionScale() float64 {
 	case MEDIUM:
 		return 0.6
 	case SMALL:
-		return 0.6
+		return 0.4
+	}
+
+	return 1.0
+}
+
+func (a Asteroid) GetSizeModifier() float32 {
+	switch a.Size {
+	case BIG:
+		return 1.5
+	case MEDIUM:
+		return 1.0
+	case SMALL:
+		return 0.5
+	}
+
+	return 1.0
+}
+
+func (a Asteroid) GetSpeedModifier() float32 {
+	switch a.Size {
+	case BIG:
+		return 0.7
+	case MEDIUM:
+		return 1.0
+	case SMALL:
+		return 1.5
 	}
 
 	return 1.0
@@ -93,18 +119,8 @@ func getRandVelocity(rotation float32) rl.Vector2 {
 	}
 }
 
-func getRandShape(size AsteroidSize) ([]rl.Vector2, float64) {
+func getRandShape() ([]rl.Vector2, float64) {
 	var points []rl.Vector2
-
-	var sizeMultiplier float32
-	switch size {
-	case BIG:
-		sizeMultiplier = 2.0
-	case MEDIUM:
-		sizeMultiplier = 1.0
-	case SMALL:
-		sizeMultiplier = 0.5
-	}
 
 	numPoints := rng.Int32N(4) + 7 // 7–10 points
 	baseAngle := 2 * math.Pi / float64(numPoints)
@@ -115,7 +131,7 @@ func getRandShape(size AsteroidSize) ([]rl.Vector2, float64) {
 		angleJitter := rng.Float64()*baseAngle*0.4 - baseAngle*0.2
 		angle := float64(i)*baseAngle + angleJitter
 
-		radius := 0.4 + rng.Float64()*0.6*float64(sizeMultiplier)
+		radius := 0.4 + rng.Float64()*0.6
 		allPointsRadius = append(allPointsRadius, radius)
 
 		// Polar to Cartesian
