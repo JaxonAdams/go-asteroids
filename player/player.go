@@ -11,10 +11,12 @@ import (
 type PlayerShip struct {
 	Position    rl.Vector2
 	Velocity    rl.Vector2
+	Forward     rl.Vector2
 	Shape       []rl.Vector2
 	TailShape   []rl.Vector2
 	Rotation    float32
 	IsThrusting bool
+	IsFiring    bool
 	DeathTime   float64
 }
 
@@ -57,16 +59,22 @@ func (p *PlayerShip) HandleInput() {
 	if rl.IsKeyDown(rl.KeyW) {
 		p.IsThrusting = true
 
-		forward := rl.Vector2{
+		p.Forward = rl.Vector2{
 			X: float32(math.Cos(float64(p.Rotation - math.Pi/2))),
 			Y: float32(math.Sin(float64(p.Rotation - math.Pi/2))),
 		}
 
-		acceleration := rl.Vector2Scale(forward, constants.PLAYER_SPEED*dt)
+		acceleration := rl.Vector2Scale(p.Forward, constants.PLAYER_SPEED*dt)
 
 		p.Velocity = rl.Vector2Add(p.Velocity, acceleration)
 	} else {
 		p.IsThrusting = false
+	}
+
+	if rl.IsKeyPressed(rl.KeySpace) {
+		p.IsFiring = true
+	} else {
+		p.IsFiring = false
 	}
 
 	// Environmental Effects

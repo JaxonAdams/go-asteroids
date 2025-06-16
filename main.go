@@ -9,6 +9,7 @@ import (
 	"github.com/JaxonAdams/go-asteroids/asteroid"
 	"github.com/JaxonAdams/go-asteroids/constants"
 	"github.com/JaxonAdams/go-asteroids/particle"
+	"github.com/JaxonAdams/go-asteroids/projectile"
 	"github.com/JaxonAdams/go-asteroids/utils"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -17,6 +18,7 @@ type GameState struct {
 	PlayerShip    player.PlayerShip
 	AsteroidField []*asteroid.Asteroid
 	GameParticles []particle.IParticle
+	Projectiles   []*projectile.Projectile
 }
 
 var s = rand.NewPCG(42, uint64(time.Now().Unix()))
@@ -56,6 +58,7 @@ func prepareLevel(existingAsteroids []*asteroid.Asteroid) GameState {
 
 	state.PlayerShip = player.PlayerShip{}
 	state.GameParticles = []particle.IParticle{}
+	state.Projectiles = []*projectile.Projectile{}
 
 	state.PlayerShip.Init()
 
@@ -77,6 +80,16 @@ func update(state *GameState) {
 		}
 	}
 	state.GameParticles = newParticles
+
+	// Update projectiles
+	newProjectiles := (state.Projectiles)[:0]
+	for _, pr := range state.Projectiles {
+		pr.Update()
+		if !pr.IsDead() {
+			newProjectiles = append(newProjectiles, pr)
+		}
+	}
+	state.Projectiles = newProjectiles
 
 	if !state.PlayerShip.IsDead() {
 		state.PlayerShip.HandleInput()
@@ -111,6 +124,21 @@ func update(state *GameState) {
 					state.GameParticles = append(state.GameParticles, newParticle)
 				}
 			}
+		}
+
+		if state.PlayerShip.IsFiring {
+			angle := state.PlayerShip.Rotation - math.Pi/2
+			direction := rl.Vector2{
+				X: float32(math.Cos(float64(angle))),
+				Y: float32(math.Sin(float64(angle))),
+			}
+			speed := float32(4.0)
+
+			state.Projectiles = append(state.Projectiles, &projectile.Projectile{
+				Position: state.PlayerShip.Position,
+				Velocity: rl.Vector2Scale(direction, speed),
+				Ttl:      2,
+			})
 		}
 	} else {
 		state.PlayerShip.DeathTime -= float64(rl.GetFrameTime())
@@ -161,6 +189,11 @@ func draw(state GameState) {
 	// Particles
 	for _, pt := range state.GameParticles {
 		pt.Draw()
+	}
+
+	// Projectiles
+	for _, pr := range state.Projectiles {
+		pr.Draw()
 	}
 }
 
