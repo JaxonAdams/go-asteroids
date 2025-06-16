@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"math/rand/v2"
 	"time"
@@ -85,11 +84,9 @@ func update(state *GameState) {
 	// Update projectiles
 	if len(state.Projectiles) > 0 {
 		newProjectiles := (state.Projectiles)[:0]
-		newAsteroids := (state.AsteroidField)[:0]
-
+		newAsteroids := []*asteroid.Asteroid{}
 		hitIndices := map[int]bool{}
 
-		// Loop over projectiles
 		for _, pr := range state.Projectiles {
 			pr.Update()
 			if pr.IsDead() {
@@ -104,9 +101,16 @@ func update(state *GameState) {
 				projectileRadius := pr.GetSize()
 
 				if dist < (asteroidRadius + projectileRadius) {
-					fmt.Println("ASTEROID HIT!!")
 					collided = true
-					hitIndices[i] = true // mark it for removal
+
+					// Explosion particles
+					state.GameParticles = append(state.GameParticles, particle.CreateExplosion(a.Position, 12)...)
+
+					// Split asteroid
+					fragments := a.Split()
+					newAsteroids = append(newAsteroids, fragments...)
+
+					hitIndices[i] = true
 					break
 				}
 			}
@@ -116,7 +120,7 @@ func update(state *GameState) {
 			}
 		}
 
-		// Rebuild asteroid list after checking all projectiles
+		// Rebuild asteroid list only after checking all projectiles
 		for i, a := range state.AsteroidField {
 			if !hitIndices[i] {
 				newAsteroids = append(newAsteroids, a)
@@ -140,6 +144,7 @@ func update(state *GameState) {
 				state.PlayerShip.DeathTime = constants.PLAYER_DEATH_COOLDOWN
 
 				// Create death particles
+				state.GameParticles = append(state.GameParticles, particle.CreateExplosion(a.Position, 20)...)
 				for range 5 {
 					angle := 2 * math.Pi * rng.Float64()
 					newParticle := &particle.LineParticle{

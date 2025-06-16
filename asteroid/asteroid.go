@@ -58,6 +58,28 @@ func New(size AsteroidSize) *Asteroid {
 	}
 }
 
+func (a *Asteroid) Split() []*Asteroid {
+	if a.Size >= SMALL {
+		return nil
+	}
+
+	newSize := a.Size + 1
+	var fragments []*Asteroid
+	for range 2 {
+		frag := New(newSize)
+		frag.Position = a.Position
+		frag.Velocity = rl.Vector2Add(
+			a.Velocity,
+			rl.Vector2{
+				X: 1.5*rng.Float32() - 0.75,
+				Y: 1.5*rng.Float32() - 0.75,
+			},
+		)
+		fragments = append(fragments, frag)
+	}
+	return fragments
+}
+
 func (a Asteroid) GetSize() float64 {
 	return a.AvgRadius
 }
