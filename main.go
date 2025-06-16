@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"math/rand/v2"
 	"time"
@@ -82,20 +83,55 @@ func update(state *GameState) {
 	state.GameParticles = newParticles
 
 	// Update projectiles
-	newProjectiles := (state.Projectiles)[:0]
-	for _, pr := range state.Projectiles {
-		pr.Update()
-		if !pr.IsDead() {
-			newProjectiles = append(newProjectiles, pr)
+	if len(state.Projectiles) > 0 {
+		newProjectiles := (state.Projectiles)[:0]
+		newAsteroids := (state.AsteroidField)[:0]
+
+		hitIndices := map[int]bool{}
+
+		// Loop over projectiles
+		for _, pr := range state.Projectiles {
+			pr.Update()
+			if pr.IsDead() {
+				continue
+			}
+
+			collided := false
+
+			for i, a := range state.AsteroidField {
+				dist := rl.Vector2Distance(pr.Position, a.Position)
+				asteroidRadius := float32(a.GetSize() * a.GetCollisionScale() * constants.SCALE)
+				projectileRadius := pr.GetSize()
+
+				if dist < (asteroidRadius + projectileRadius) {
+					fmt.Println("ASTEROID HIT!!")
+					collided = true
+					hitIndices[i] = true // mark it for removal
+					break
+				}
+			}
+
+			if !collided {
+				newProjectiles = append(newProjectiles, pr)
+			}
 		}
+
+		// Rebuild asteroid list after checking all projectiles
+		for i, a := range state.AsteroidField {
+			if !hitIndices[i] {
+				newAsteroids = append(newAsteroids, a)
+			}
+		}
+
+		state.Projectiles = newProjectiles
+		state.AsteroidField = newAsteroids
 	}
-	state.Projectiles = newProjectiles
 
 	if !state.PlayerShip.IsDead() {
 		state.PlayerShip.HandleInput()
 
 		for _, a := range state.AsteroidField {
-			// Check for collision
+			// Check for asteroid v. player collision
 			dist := rl.Vector2Distance(a.Position, state.PlayerShip.Position)
 			asteroidRadius := float32(a.GetSize() * a.GetCollisionScale() * constants.SCALE)
 			playerRadius := state.PlayerShip.GetCollisionRadius()
@@ -137,6 +173,7 @@ func update(state *GameState) {
 			state.Projectiles = append(state.Projectiles, &projectile.Projectile{
 				Position: state.PlayerShip.Position,
 				Velocity: rl.Vector2Scale(direction, speed),
+				Size:     rl.Vector2{X: 2, Y: 2},
 				Ttl:      2,
 			})
 		}

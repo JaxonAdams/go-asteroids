@@ -5,6 +5,7 @@ import rl "github.com/gen2brain/raylib-go/raylib"
 type Projectile struct {
 	Position rl.Vector2
 	Velocity rl.Vector2
+	Size     rl.Vector2
 	Ttl      float32
 }
 
@@ -14,11 +15,14 @@ func (p *Projectile) Update() {
 }
 
 func (p *Projectile) Draw() {
-	size := rl.Vector2{X: 2, Y: 2}
-	centeredPos := rl.Vector2Subtract(p.Position, rl.Vector2{X: size.X / 2, Y: size.Y / 2})
-	rl.DrawRectangleV(centeredPos, size, rl.White)
+	centeredPos := rl.Vector2Subtract(p.Position, rl.Vector2{X: p.Size.X / 2, Y: p.Size.Y / 2})
+	rl.DrawRectangleV(centeredPos, p.Size, rl.White)
 }
 
 func (p *Projectile) IsDead() bool {
 	return p.Ttl <= 0
+}
+
+func (p Projectile) GetSize() float32 {
+	return p.Size.X / 2
 }
