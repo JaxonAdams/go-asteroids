@@ -6,12 +6,15 @@ import (
 
 	player "github.com/JaxonAdams/go-asteroids/Player"
 	"github.com/JaxonAdams/go-asteroids/asteroid"
+	"github.com/JaxonAdams/go-asteroids/audio"
 	"github.com/JaxonAdams/go-asteroids/constants"
 	"github.com/JaxonAdams/go-asteroids/particle"
 	"github.com/JaxonAdams/go-asteroids/projectile"
 	"github.com/JaxonAdams/go-asteroids/utils"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
+
+var audioPlayer audio.AudioPlayer = audio.AudioPlayer{}
 
 type GameState struct {
 	PlayerShip     player.PlayerShip
@@ -28,11 +31,15 @@ func main() {
 		constants.WINDOW_SIZE_Y,
 		"ASTEROIDS",
 	)
+	rl.InitAudioDevice()
+
 	defer rl.CloseWindow()
+	defer rl.CloseAudioDevice()
 
 	rl.SetTargetFPS(60)
 
 	state := prepareGame()
+	audioPlayer.Init()
 
 	for !rl.WindowShouldClose() {
 
@@ -285,6 +292,8 @@ func updatePlayerAlive(state *GameState) {
 			Size:     rl.Vector2{X: 2, Y: 2},
 			Ttl:      2,
 		})
+
+		audioPlayer.PlayLazer()
 	}
 }
 
