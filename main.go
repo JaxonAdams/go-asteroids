@@ -49,6 +49,8 @@ func main() {
 		rl.ClearBackground(rl.Black)
 		draw(state)
 		rl.EndDrawing()
+
+		audioPlayer.HandleMusic()
 	}
 }
 
