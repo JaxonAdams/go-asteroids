@@ -13,10 +13,11 @@ import (
 )
 
 type GameState struct {
-	PlayerShip    player.PlayerShip
-	AsteroidField []*asteroid.Asteroid
-	GameParticles []particle.IParticle
-	Projectiles   []*projectile.Projectile
+	PlayerShip     player.PlayerShip
+	PlayerNumLives int
+	AsteroidField  []*asteroid.Asteroid
+	GameParticles  []particle.IParticle
+	Projectiles    []*projectile.Projectile
 }
 
 func main() {
@@ -29,7 +30,7 @@ func main() {
 
 	rl.SetTargetFPS(60)
 
-	state := prepareLevel([]*asteroid.Asteroid{})
+	state := prepareGame()
 
 	for !rl.WindowShouldClose() {
 
@@ -42,7 +43,11 @@ func main() {
 	}
 }
 
-func prepareLevel(existingAsteroids []*asteroid.Asteroid) GameState {
+func prepareGame() GameState {
+	return prepareLevel([]*asteroid.Asteroid{}, 5)
+}
+
+func prepareLevel(existingAsteroids []*asteroid.Asteroid, numLives int) GameState {
 	var state GameState
 
 	if len(existingAsteroids) > 0 {
@@ -52,6 +57,7 @@ func prepareLevel(existingAsteroids []*asteroid.Asteroid) GameState {
 	}
 
 	state.PlayerShip = player.PlayerShip{}
+	state.PlayerNumLives = numLives
 	state.GameParticles = []particle.IParticle{}
 	state.Projectiles = []*projectile.Projectile{}
 
@@ -75,11 +81,9 @@ func update(state *GameState) {
 func draw(state GameState) {
 	// Player Ship
 	if !state.PlayerShip.IsDead() {
-		utils.DrawShape(
+		player.DrawShip(
 			state.PlayerShip.Position,
-			constants.SCALE,
 			state.PlayerShip.Rotation,
-			state.PlayerShip.Shape,
 		)
 	}
 
@@ -113,6 +117,17 @@ func draw(state GameState) {
 	// Projectiles
 	for _, pr := range state.Projectiles {
 		pr.Draw()
+	}
+
+	// Player Lives Remaining
+	for i := range state.PlayerNumLives {
+		player.DrawShip(
+			rl.Vector2{
+				X: float32(i*20) + constants.SCALE,
+				Y: constants.SCALE,
+			},
+			0,
+		)
 	}
 }
 
@@ -200,6 +215,7 @@ func updatePlayerAlive(state *GameState) {
 
 		if dist < (asteroidRadius + playerRadius) {
 			state.PlayerShip.DeathTime = constants.PLAYER_DEATH_COOLDOWN
+			state.PlayerNumLives -= 1
 
 			// Particle Explosion
 			state.GameParticles = append(
@@ -238,9 +254,16 @@ func updatePlayerDead(state *GameState) {
 	state.PlayerShip.IsThrusting = false
 
 	if state.PlayerShip.DeathTime <= 0.0 {
-		newState := prepareLevel(state.AsteroidField)
+		var newState GameState
+		if state.PlayerNumLives > 0 {
+			newState = prepareLevel(state.AsteroidField, state.PlayerNumLives)
+		} else {
+			newState = prepareGame()
+		}
 		state.PlayerShip = newState.PlayerShip
+		state.PlayerNumLives = newState.PlayerNumLives
 		state.AsteroidField = newState.AsteroidField
 		state.GameParticles = newState.GameParticles
+		state.Projectiles = newState.Projectiles
 	}
 }

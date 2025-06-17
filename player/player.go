@@ -8,6 +8,23 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+var PlayerShape []rl.Vector2 = []rl.Vector2{
+	{X: -0.2, Y: 0.3},
+	{X: 0.0, Y: -0.3},
+	{X: 0.2, Y: 0.3},
+	{X: 0.1, Y: 0.2},
+	{X: -0.1, Y: 0.2},
+}
+
+func DrawShip(pos rl.Vector2, rotation float32) {
+	utils.DrawShape(
+		pos,
+		constants.SCALE,
+		rotation,
+		PlayerShape,
+	)
+}
+
 type PlayerShip struct {
 	Position    rl.Vector2
 	Velocity    rl.Vector2
@@ -21,14 +38,7 @@ type PlayerShip struct {
 }
 
 func (p *PlayerShip) Init() {
-	p.Shape = []rl.Vector2{
-		{X: -0.2, Y: 0.3},
-		{X: 0.0, Y: -0.3},
-		{X: 0.2, Y: 0.3},
-		{X: 0.1, Y: 0.2},
-		{X: -0.1, Y: 0.2},
-	}
-
+	p.Shape = PlayerShape
 	p.TailShape = []rl.Vector2{
 		{X: 0.1, Y: 0.2},
 		{X: 0.0, Y: 0.5},
