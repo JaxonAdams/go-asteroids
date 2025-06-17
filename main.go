@@ -208,7 +208,10 @@ func updateProjectiles(state *GameState) {
 func updatePlayerAlive(state *GameState) {
 	state.PlayerShip.HandleInput()
 
-	for _, a := range state.AsteroidField {
+	newAsteroids := []*asteroid.Asteroid{}
+	hitIndices := map[int]bool{}
+
+	for i, a := range state.AsteroidField {
 		dist := rl.Vector2Distance(a.Position, state.PlayerShip.Position)
 		asteroidRadius := float32(a.GetSize() * a.GetCollisionScale() * constants.SCALE)
 		playerRadius := state.PlayerShip.GetCollisionRadius()
@@ -229,8 +232,19 @@ func updatePlayerAlive(state *GameState) {
 				particle.CreateShipExplosion(state.PlayerShip.Position, 5)...,
 			)
 
+			// Split the asteroid
+			newAsteroids = append(newAsteroids, a.Split()...)
+			hitIndices[i] = true
+			break
 		}
 	}
+
+	for i, a := range state.AsteroidField {
+		if !hitIndices[i] {
+			newAsteroids = append(newAsteroids, a)
+		}
+	}
+	state.AsteroidField = newAsteroids
 
 	if state.PlayerShip.IsFiring {
 		angle := state.PlayerShip.Rotation - math.Pi/2
