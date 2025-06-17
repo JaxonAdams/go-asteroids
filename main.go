@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"strconv"
 
 	player "github.com/JaxonAdams/go-asteroids/Player"
 	"github.com/JaxonAdams/go-asteroids/asteroid"
@@ -15,6 +16,7 @@ import (
 type GameState struct {
 	PlayerShip     player.PlayerShip
 	PlayerNumLives int
+	PlayerScore    int
 	AsteroidField  []*asteroid.Asteroid
 	GameParticles  []particle.IParticle
 	Projectiles    []*projectile.Projectile
@@ -44,10 +46,10 @@ func main() {
 }
 
 func prepareGame() GameState {
-	return prepareLevel([]*asteroid.Asteroid{}, 5)
+	return prepareLevel([]*asteroid.Asteroid{}, 5, 0)
 }
 
-func prepareLevel(existingAsteroids []*asteroid.Asteroid, numLives int) GameState {
+func prepareLevel(existingAsteroids []*asteroid.Asteroid, numLives, score int) GameState {
 	var state GameState
 
 	if len(existingAsteroids) > 0 {
@@ -60,6 +62,7 @@ func prepareLevel(existingAsteroids []*asteroid.Asteroid, numLives int) GameStat
 	state.PlayerNumLives = numLives
 	state.GameParticles = []particle.IParticle{}
 	state.Projectiles = []*projectile.Projectile{}
+	state.PlayerScore = score
 
 	state.PlayerShip.Init()
 
@@ -129,6 +132,15 @@ func draw(state GameState) {
 			0,
 		)
 	}
+
+	// Player Score
+	rl.DrawText(
+		strconv.Itoa(state.PlayerScore),
+		constants.WINDOW_SIZE_X-100,
+		30,
+		32,
+		rl.White,
+	)
 }
 
 func loadLevel() []*asteroid.Asteroid {
@@ -183,8 +195,21 @@ func updateProjectiles(state *GameState) {
 
 			if dist < (asteroidRadius + projectileRadius) {
 				collided = true
+
+				var pointsEarned int
+				switch a.Size {
+				case asteroid.BIG:
+					pointsEarned = 50
+				case asteroid.MEDIUM:
+					pointsEarned = 100
+				case asteroid.SMALL:
+					pointsEarned = 200
+				}
+				state.PlayerScore += pointsEarned
+
 				state.GameParticles = append(state.GameParticles, particle.CreateExplosion(a.Position, 12)...)
 				newAsteroids = append(newAsteroids, a.Split()...)
+
 				hitIndices[i] = true
 				break
 			}
@@ -270,12 +295,13 @@ func updatePlayerDead(state *GameState) {
 	if state.PlayerShip.DeathTime <= 0.0 {
 		var newState GameState
 		if state.PlayerNumLives > 0 {
-			newState = prepareLevel(state.AsteroidField, state.PlayerNumLives)
+			newState = prepareLevel(state.AsteroidField, state.PlayerNumLives, state.PlayerScore)
 		} else {
 			newState = prepareGame()
 		}
 		state.PlayerShip = newState.PlayerShip
 		state.PlayerNumLives = newState.PlayerNumLives
+		state.PlayerScore = newState.PlayerScore
 		state.AsteroidField = newState.AsteroidField
 		state.GameParticles = newState.GameParticles
 		state.Projectiles = newState.Projectiles
