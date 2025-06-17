@@ -202,6 +202,7 @@ func updateProjectiles(state *GameState) {
 
 			if dist < (asteroidRadius + projectileRadius) {
 				collided = true
+				audioPlayer.PlayAsteroidSplit()
 
 				var pointsEarned int
 				switch a.Size {
@@ -251,6 +252,8 @@ func updatePlayerAlive(state *GameState) {
 		if dist < (asteroidRadius + playerRadius) {
 			state.PlayerShip.DeathTime = constants.PLAYER_DEATH_COOLDOWN
 			state.PlayerNumLives -= 1
+
+			audioPlayer.PlayDeath()
 
 			// Particle Explosion
 			state.GameParticles = append(

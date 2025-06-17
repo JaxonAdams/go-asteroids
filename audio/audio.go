@@ -29,3 +29,15 @@ func (ap AudioPlayer) PlayLazer() {
 		rl.PlaySound(ap.lazerSound)
 	}
 }
+
+func (ap AudioPlayer) PlayDeath() {
+	if rl.IsAudioDeviceReady() {
+		rl.PlaySound(ap.deathSound)
+	}
+}
+
+func (ap AudioPlayer) PlayAsteroidSplit() {
+	if rl.IsAudioDeviceReady() {
+		rl.PlaySound(ap.splitSound)
+	}
+}
