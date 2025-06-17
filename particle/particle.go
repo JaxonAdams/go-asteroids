@@ -4,6 +4,8 @@ import (
 	"math"
 	"math/rand/v2"
 
+	"github.com/JaxonAdams/go-asteroids/constants"
+	"github.com/JaxonAdams/go-asteroids/utils"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -75,6 +77,30 @@ func CreateExplosion(position rl.Vector2, count int) []IParticle {
 				Ttl: 0.6 + rand.Float32()*0.4,
 			},
 		})
+	}
+	return particles
+}
+
+func CreateShipExplosion(position rl.Vector2, count int) []IParticle {
+	var particles []IParticle
+	for range count {
+		angle := 2 * math.Pi * utils.Rng.Float64()
+		newParticle := &LineParticle{
+			Rotation: 2 * math.Pi * utils.Rng.Float32(),
+			Length:   constants.SCALE * (0.6 + (0.4 * utils.Rng.Float32())),
+			Particle: Particle{
+				Position: rl.Vector2Add(
+					position,
+					rl.Vector2{X: utils.Rng.Float32() * 3, Y: utils.Rng.Float32() * 3},
+				),
+				Velocity: rl.Vector2Scale(
+					rl.Vector2{X: float32(math.Cos(angle)), Y: float32(math.Sin(angle))},
+					2.0*utils.Rng.Float32(),
+				),
+				Ttl: 3.0 + utils.Rng.Float32(),
+			},
+		}
+		particles = append(particles, newParticle)
 	}
 	return particles
 }

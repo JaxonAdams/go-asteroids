@@ -2,8 +2,6 @@ package main
 
 import (
 	"math"
-	"math/rand/v2"
-	"time"
 
 	player "github.com/JaxonAdams/go-asteroids/Player"
 	"github.com/JaxonAdams/go-asteroids/asteroid"
@@ -20,9 +18,6 @@ type GameState struct {
 	GameParticles []particle.IParticle
 	Projectiles   []*projectile.Projectile
 }
-
-var s = rand.NewPCG(42, uint64(time.Now().Unix()))
-var rng = rand.New(s)
 
 func main() {
 	rl.InitWindow(
@@ -66,132 +61,14 @@ func prepareLevel(existingAsteroids []*asteroid.Asteroid) GameState {
 }
 
 func update(state *GameState) {
-	// Update asteroids
-	for _, a := range state.AsteroidField {
-		a.Move()
-	}
-
-	// Update particles
-	newParticles := (state.GameParticles)[:0]
-	for _, pt := range state.GameParticles {
-		pt.Update()
-		if !pt.IsDead() {
-			newParticles = append(newParticles, pt)
-		}
-	}
-	state.GameParticles = newParticles
-
-	// Update projectiles
-	if len(state.Projectiles) > 0 {
-		newProjectiles := (state.Projectiles)[:0]
-		newAsteroids := []*asteroid.Asteroid{}
-		hitIndices := map[int]bool{}
-
-		for _, pr := range state.Projectiles {
-			pr.Update()
-			if pr.IsDead() {
-				continue
-			}
-
-			collided := false
-
-			for i, a := range state.AsteroidField {
-				dist := rl.Vector2Distance(pr.Position, a.Position)
-				asteroidRadius := float32(a.GetSize() * a.GetCollisionScale() * constants.SCALE)
-				projectileRadius := pr.GetSize()
-
-				if dist < (asteroidRadius + projectileRadius) {
-					collided = true
-
-					// Explosion particles
-					state.GameParticles = append(state.GameParticles, particle.CreateExplosion(a.Position, 12)...)
-
-					// Split asteroid
-					fragments := a.Split()
-					newAsteroids = append(newAsteroids, fragments...)
-
-					hitIndices[i] = true
-					break
-				}
-			}
-
-			if !collided {
-				newProjectiles = append(newProjectiles, pr)
-			}
-		}
-
-		// Rebuild asteroid list only after checking all projectiles
-		for i, a := range state.AsteroidField {
-			if !hitIndices[i] {
-				newAsteroids = append(newAsteroids, a)
-			}
-		}
-
-		state.Projectiles = newProjectiles
-		state.AsteroidField = newAsteroids
-	}
+	updateAsteroids(state)
+	updateParticles(state)
+	updateProjectiles(state)
 
 	if !state.PlayerShip.IsDead() {
-		state.PlayerShip.HandleInput()
-
-		for _, a := range state.AsteroidField {
-			// Check for asteroid v. player collision
-			dist := rl.Vector2Distance(a.Position, state.PlayerShip.Position)
-			asteroidRadius := float32(a.GetSize() * a.GetCollisionScale() * constants.SCALE)
-			playerRadius := state.PlayerShip.GetCollisionRadius()
-
-			if dist < (asteroidRadius + playerRadius) {
-				state.PlayerShip.DeathTime = constants.PLAYER_DEATH_COOLDOWN
-
-				// Create death particles
-				state.GameParticles = append(state.GameParticles, particle.CreateExplosion(a.Position, 20)...)
-				for range 5 {
-					angle := 2 * math.Pi * rng.Float64()
-					newParticle := &particle.LineParticle{
-						Rotation: 2 * math.Pi * rng.Float32(),
-						Length:   constants.SCALE * (0.6 + (0.4 * rng.Float32())),
-						Particle: particle.Particle{
-							Position: rl.Vector2Add(
-								state.PlayerShip.Position,
-								rl.Vector2{X: rng.Float32() * 3, Y: rng.Float32() * 3},
-							),
-							Velocity: rl.Vector2Scale(
-								rl.Vector2{X: float32(math.Cos(angle)), Y: float32(math.Sin(angle))},
-								2.0*rng.Float32(),
-							),
-							Ttl: 3.0 + rng.Float32(),
-						},
-					}
-					state.GameParticles = append(state.GameParticles, newParticle)
-				}
-			}
-		}
-
-		if state.PlayerShip.IsFiring {
-			angle := state.PlayerShip.Rotation - math.Pi/2
-			direction := rl.Vector2{
-				X: float32(math.Cos(float64(angle))),
-				Y: float32(math.Sin(float64(angle))),
-			}
-			speed := float32(4.0)
-
-			state.Projectiles = append(state.Projectiles, &projectile.Projectile{
-				Position: state.PlayerShip.Position,
-				Velocity: rl.Vector2Scale(direction, speed),
-				Size:     rl.Vector2{X: 2, Y: 2},
-				Ttl:      2,
-			})
-		}
+		updatePlayerAlive(state)
 	} else {
-		state.PlayerShip.DeathTime -= float64(rl.GetFrameTime())
-		state.PlayerShip.IsThrusting = false
-
-		if state.PlayerShip.DeathTime <= 0.0 {
-			newState := prepareLevel(state.AsteroidField)
-			state.PlayerShip = newState.PlayerShip
-			state.AsteroidField = newState.AsteroidField
-			state.GameParticles = newParticles
-		}
+		updatePlayerDead(state)
 	}
 }
 
@@ -244,9 +121,126 @@ func loadLevel() []*asteroid.Asteroid {
 	asteroids := make([]*asteroid.Asteroid, 0, numAsteroids)
 
 	for range numAsteroids {
-		size := rng.Int32N(int32(asteroid.NumAsteroidSizes))
+		size := utils.Rng.Int32N(int32(asteroid.NumAsteroidSizes))
 		asteroids = append(asteroids, asteroid.New(asteroid.AsteroidSize(size)))
 	}
 
 	return asteroids
+}
+
+func updateAsteroids(state *GameState) {
+	for _, a := range state.AsteroidField {
+		a.Move()
+	}
+}
+
+func updateParticles(state *GameState) {
+	newParticles := (state.GameParticles)[:0]
+	for _, pt := range state.GameParticles {
+		pt.Update()
+		if !pt.IsDead() {
+			newParticles = append(newParticles, pt)
+		}
+	}
+	state.GameParticles = newParticles
+}
+
+func updateProjectiles(state *GameState) {
+	if len(state.Projectiles) == 0 {
+		return
+	}
+
+	newProjectiles := (state.Projectiles)[:0]
+	newAsteroids := []*asteroid.Asteroid{}
+	hitIndices := map[int]bool{}
+
+	for _, pr := range state.Projectiles {
+		pr.Update()
+		if pr.IsDead() {
+			continue
+		}
+
+		collided := false
+		for i, a := range state.AsteroidField {
+			dist := rl.Vector2Distance(pr.Position, a.Position)
+			asteroidRadius := float32(a.GetSize() * a.GetCollisionScale() * constants.SCALE)
+			projectileRadius := pr.GetSize()
+
+			if dist < (asteroidRadius + projectileRadius) {
+				collided = true
+				state.GameParticles = append(state.GameParticles, particle.CreateExplosion(a.Position, 12)...)
+				newAsteroids = append(newAsteroids, a.Split()...)
+				hitIndices[i] = true
+				break
+			}
+		}
+
+		if !collided {
+			newProjectiles = append(newProjectiles, pr)
+		}
+	}
+
+	for i, a := range state.AsteroidField {
+		if !hitIndices[i] {
+			newAsteroids = append(newAsteroids, a)
+		}
+	}
+
+	state.Projectiles = newProjectiles
+	state.AsteroidField = newAsteroids
+}
+
+func updatePlayerAlive(state *GameState) {
+	state.PlayerShip.HandleInput()
+
+	for _, a := range state.AsteroidField {
+		dist := rl.Vector2Distance(a.Position, state.PlayerShip.Position)
+		asteroidRadius := float32(a.GetSize() * a.GetCollisionScale() * constants.SCALE)
+		playerRadius := state.PlayerShip.GetCollisionRadius()
+
+		if dist < (asteroidRadius + playerRadius) {
+			state.PlayerShip.DeathTime = constants.PLAYER_DEATH_COOLDOWN
+
+			// Particle Explosion
+			state.GameParticles = append(
+				state.GameParticles,
+				particle.CreateExplosion(state.PlayerShip.Position, 30)...,
+			)
+
+			// Ship Explosion
+			state.GameParticles = append(
+				state.GameParticles,
+				particle.CreateShipExplosion(state.PlayerShip.Position, 5)...,
+			)
+
+		}
+	}
+
+	if state.PlayerShip.IsFiring {
+		angle := state.PlayerShip.Rotation - math.Pi/2
+		direction := rl.Vector2{
+			X: float32(math.Cos(float64(angle))),
+			Y: float32(math.Sin(float64(angle))),
+		}
+		speed := float32(4.0)
+
+		state.Projectiles = append(state.Projectiles, &projectile.Projectile{
+			Position: state.PlayerShip.Position,
+			Velocity: rl.Vector2Scale(direction, speed),
+			Size:     rl.Vector2{X: 2, Y: 2},
+			Ttl:      2,
+		})
+	}
+}
+
+func updatePlayerDead(state *GameState) {
+	state.PlayerShip.DeathTime -= float64(rl.GetFrameTime())
+	state.PlayerShip.IsThrusting = false
+
+	if state.PlayerShip.DeathTime <= 0.0 {
+		newState := prepareLevel(state.AsteroidField)
+		state.PlayerShip = newState.PlayerShip
+		state.AsteroidField = newState.AsteroidField
+		state.GameParticles = newState.GameParticles
+	}
 }
